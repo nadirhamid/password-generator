@@ -12,6 +12,11 @@ class ComputerPasswordGenerator extends AbstractPasswordGenerator
     const OPTION_LOWER_CASE = 'LOWERCASE';
     const OPTION_NUMBERS = 'NUMBERS';
     const OPTION_SYMBOLS = 'SYMBOLS';
+    const OPTION_ENFORCE_UPPER_CASE = 'ENFORCE_UPPERCASE';
+    const OPTION_ENFORCE_LOWER_CASE = 'ENFORCE_LOWERCASE';
+    const OPTION_ENFORCE_NUMBERS = 'ENFORCE_NUMBERS';
+    const OPTION_ENFORCE_SYMBOLS = 'ENFORCE_SYMBOLS';
+
     const OPTION_AVOID_SIMILAR = 'AVOID_SIMILAR';
     const OPTION_LENGTH = 'LENGTH';
 
@@ -30,6 +35,10 @@ class ComputerPasswordGenerator extends AbstractPasswordGenerator
             ->setOption(self::OPTION_LOWER_CASE, array('type' => Option::TYPE_BOOLEAN, 'default' => true))
             ->setOption(self::OPTION_NUMBERS, array('type' => Option::TYPE_BOOLEAN, 'default' => true))
             ->setOption(self::OPTION_SYMBOLS, array('type' => Option::TYPE_BOOLEAN, 'default' => false))
+            ->setOption(self::OPTION_ENFORCE_UPPER_CASE, array('type' => Option::TYPE_BOOLEAN, 'default' => false))
+            ->setOption(self::OPTION_ENFORCE_LOWER_CASE, array('type' => Option::TYPE_BOOLEAN, 'default' => false))
+            ->setOption(self::OPTION_ENFORCE_NUMBERS, array('type' => Option::TYPE_BOOLEAN, 'default' => false))
+            ->setOption(self::OPTION_ENFORCE_SYMBOLS, array('type' => Option::TYPE_BOOLEAN, 'default' => false))
             ->setOption(self::OPTION_AVOID_SIMILAR, array('type' => Option::TYPE_BOOLEAN, 'default' => true))
             ->setOption(self::OPTION_LENGTH, array('type' => Option::TYPE_INTEGER, 'default' => 10))
             ->setParameter(self::PARAMETER_UPPER_CASE, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
@@ -88,12 +97,50 @@ class ComputerPasswordGenerator extends AbstractPasswordGenerator
     {
         $characterList = $this->getCharacterList()->getCharacters();
         $characters = \strlen($characterList);
+        $enforceSymbols = $this->getOptionValue(self::OPTION_ENFORCE_SYMBOLS);
+        $enforceNumber = $this->getOptionValue(self::OPTION_ENFORCE_NUMBER);
+        $enforceLowercase = $this->getOptionValue(self::OPTION_ENFORCE_LOWER_CASE);
+        $enforceUppercase = $this->getOptionValue(self::OPTION_ENFORCE_UPPER_CASE);
+
         $password = '';
 
         $length = $this->getLength();
+        $isPasswordComplaint = false;
+        $hasNumber = false;
+        $hasSymbol = false;
+        $hasLowercase = false;
+        $hasUppercase = false;
 
-        for ($i = 0; $i < $length; ++$i) {
-            $password .= $characterList[$this->randomInteger(0, $characters - 1)];
+        while (!$isPasswordCompliant) {
+            for ($i = 0; $i < $length; ++$i) {
+                $character .= $characterList[$this->randomInteger(0, $characters - 1)];
+                $password .= $character;
+            }
+
+            if (preg_match('/\d+/', $password)) {
+                $hasNumber = true;
+            }
+    
+            if (preg_match('/[\W_]/', $password)) {
+                $hasSymbol = true;
+            }
+    
+            if (preg_match('/[a-z]/', $password)) {
+                $hasLowercase = true;
+            }
+
+            if (preg_match('/[A-Z]/', $password)) {
+                $hasUppercase = true;
+            }
+
+            if (!($hasNumber && $enforceNumber) 
+                || (!$hasSymbol && $enforceSymbols) 
+                || !($hasLowercase && $enforceLowercase)
+                || !($hasUppercase && $enforceUppercase)) {
+                continue;
+            }
+    
+            $isPasswordCompliant = TRUE;
         }
 
         return $password;
@@ -159,6 +206,26 @@ class ComputerPasswordGenerator extends AbstractPasswordGenerator
         return $this;
     }
 
+   /**
+     * Enforce atleast one uppercase character.
+     *
+     * @param bool $enable
+     *
+     * @return $this
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function enforceUppercase($enable = true)
+    {
+        if (!is_bool($enable)) {
+            throw new \InvalidArgumentException('Expected boolean');
+        }
+
+        $this->setOptionValue(self::OPTION_ENFORCE_UPPER_CASE, $enable);
+
+        return $this;
+    } 
+
     /**
      * Are Lowercase characters enabled?
      *
@@ -185,6 +252,26 @@ class ComputerPasswordGenerator extends AbstractPasswordGenerator
         }
 
         $this->setOptionValue(self::OPTION_LOWER_CASE, $enable);
+
+        return $this;
+    }
+
+    /**
+     * Enforce atleast one uppercase character.
+     *
+     * @param bool $enable
+     *
+     * @return $this
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function enforceLowercase($enable = true)
+    {
+        if (!is_bool($enable)) {
+            throw new \InvalidArgumentException('Expected boolean');
+        }
+
+        $this->setOptionValue(self::OPTION_ENFORCE_UPPER_CASE, $enable);
 
         return $this;
     }
@@ -220,6 +307,26 @@ class ComputerPasswordGenerator extends AbstractPasswordGenerator
     }
 
     /**
+     * Enforce atleast one number character.
+     *
+     * @param bool $enable
+     *
+     * @return $this
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function enforceNumber($enable = true)
+    {
+        if (!is_bool($enable)) {
+            throw new \InvalidArgumentException('Expected boolean');
+        }
+
+        $this->setOptionValue(self::OPTION_ENFORCE_NUMBER, $enable);
+
+        return $this;
+    }
+
+    /**
      * Are Symbols enabled?
      *
      * @return string
@@ -245,6 +352,26 @@ class ComputerPasswordGenerator extends AbstractPasswordGenerator
         }
 
         $this->setOptionValue(self::OPTION_SYMBOLS, $enable);
+
+        return $this;
+    }
+
+    /**
+     * Enforce atleast one number symbol.
+     *
+     * @param bool $enable
+     *
+     * @return $this
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function enforceSymbols($enable = true)
+    {
+        if (!is_bool($enable)) {
+            throw new \InvalidArgumentException('Expected boolean');
+        }
+
+        $this->setOptionValue(self::OPTION_ENFORCE_SYMBOL, $enable);
 
         return $this;
     }
